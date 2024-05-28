@@ -1,11 +1,10 @@
 const config = {
     type: Phaser.AUTO,
     width: 800,
-    height: 600,
+    height: 800,
     physics: {
         default: 'arcade',
         arcade: {
-            gravity: { y: 300 },
             debug: false
         }
     },
@@ -18,60 +17,60 @@ const config = {
 
 const game = new Phaser.Game(config);
 
-let player;
-let ball;
-let ground;
-let cursors;
-let score = 0;
-let scoreText;
+let board;
+let redPiece;
+let bluePiece;
+let diceRollText;
+let currentTurn = 'red';
+let diceValue = 0;
+
+const redStartPosition = { x: 50, y: 700 };
+const blueStartPosition = { x: 700, y: 50 };
 
 function preload() {
-    this.load.image('sky', 'assets/sky.png');
-    this.load.image('ground', 'assets/ground.png');
-    this.load.image('ball', 'assets/ball.png');
-    this.load.image('bat', 'assets/bat.png');
+    this.load.image('board', 'assets/board.png');
+    this.load.image('piece-red', 'assets/piece-red.png');
+    this.load.image('piece-blue', 'assets/piece-blue.png');
 }
 
 function create() {
-    this.add.image(400, 300, 'sky');
+    board = this.add.image(400, 400, 'board');
 
-    ground = this.physics.add.staticGroup();
-    ground.create(400, 568, 'ground').setScale(2).refreshBody();
+    redPiece = this.physics.add.sprite(redStartPosition.x, redStartPosition.y, 'piece-red').setInteractive();
+    bluePiece = this.physics.add.sprite(blueStartPosition.x, blueStartPosition.y, 'piece-blue').setInteractive();
 
-    player = this.physics.add.sprite(100, 450, 'bat').setScale(0.5);
-    player.setCollideWorldBounds(true);
+    diceRollText = this.add.text(650, 750, 'Roll Dice', { fontSize: '32px', fill: '#000' }).setInteractive();
+    diceRollText.on('pointerdown', rollDice, this);
 
-    ball = this.physics.add.image(400, 50, 'ball').setScale(0.5);
-    ball.setBounce(1);
-    ball.setCollideWorldBounds(true);
-    ball.setVelocity(Phaser.Math.Between(-200, 200), 20);
-
-    this.physics.add.collider(ball, ground);
-    this.physics.add.collider(player, ball, hitBall, null, this);
-
-    cursors = this.input.keyboard.createCursorKeys();
-
-    scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#000' });
+    this.input.on('gameobjectdown', movePiece, this);
 }
 
 function update() {
-    player.setVelocityX(0);
-
-    if (cursors.left.isDown) {
-        player.setVelocityX(-160);
-    } else if (cursors.right.isDown) {
-        player.setVelocityX(160);
-    }
-
-    if (cursors.up.isDown && player.body.touching.down) {
-        player.setVelocityY(-330);
-    }
 }
 
-function hitBall(player, ball) {
-    ball.setVelocityY(Phaser.Math.Between(-400, -300));
-    ball.setVelocityX(Phaser.Math.Between(-200, 200));
+function rollDice() {
+    diceValue = Phaser.Math.Between(1, 6);
+    diceRollText.setText(`Dice: ${diceValue}`);
+}
 
-    score += 1;
-    scoreText.setText('Score: ' + score);
+function movePiece(pointer, piece) {
+    if ((currentTurn === 'red' && piece.texture.key === 'piece-red') ||
+        (currentTurn === 'blue' && piece.texture.key === 'piece-blue')) {
+
+        let newX = piece.x + (diceValue * 50);
+        let newY = piece.y;
+
+        if (newX > 750) {
+            newX = 750;
+            newY = piece.y - ((newX - piece.x) - diceValue * 50);
+        }
+
+        piece.setPosition(newX, newY);
+
+        if (currentTurn === 'red') {
+            currentTurn = 'blue';
+        } else {
+            currentTurn = 'red';
+        }
+    }
 }
