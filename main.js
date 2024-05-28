@@ -18,73 +18,60 @@ const config = {
 
 const game = new Phaser.Game(config);
 
+let player;
+let ball;
+let ground;
+let cursors;
+let score = 0;
+let scoreText;
+
 function preload() {
     this.load.image('sky', 'assets/sky.png');
-    this.load.image('ground', 'assets/platform.png');
+    this.load.image('ground', 'assets/ground.png');
     this.load.image('ball', 'assets/ball.png');
-    this.load.spritesheet('dude', 'assets/dude.png', { frameWidth: 32, frameHeight: 48 });
+    this.load.image('bat', 'assets/bat.png');
 }
 
 function create() {
     this.add.image(400, 300, 'sky');
-    const platforms = this.physics.add.staticGroup();
-    platforms.create(400, 568, 'ground').setScale(2).refreshBody();
-    platforms.create(600, 400, 'ground');
-    platforms.create(50, 250, 'ground');
-    platforms.create(750, 220, 'ground');
 
-    const player = this.physics.add.sprite(100, 450, 'dude');
-    player.setBounce(0.2);
+    ground = this.physics.add.staticGroup();
+    ground.create(400, 568, 'ground').setScale(2).refreshBody();
+
+    player = this.physics.add.sprite(100, 450, 'bat').setScale(0.5);
     player.setCollideWorldBounds(true);
-    this.physics.add.collider(player, platforms);
 
-    this.anims.create({
-        key: 'left',
-        frames: this.anims.generateFrameNumbers('dude', { start: 0, end: 3 }),
-        frameRate: 10,
-        repeat: -1
-    });
+    ball = this.physics.add.image(400, 50, 'ball').setScale(0.5);
+    ball.setBounce(1);
+    ball.setCollideWorldBounds(true);
+    ball.setVelocity(Phaser.Math.Between(-200, 200), 20);
 
-    this.anims.create({
-        key: 'turn',
-        frames: [{ key: 'dude', frame: 4 }],
-        frameRate: 20
-    });
+    this.physics.add.collider(ball, ground);
+    this.physics.add.collider(player, ball, hitBall, null, this);
 
-    this.anims.create({
-        key: 'right',
-        frames: this.anims.generateFrameNumbers('dude', { start: 5, end: 8 }),
-        frameRate: 10,
-        repeat: -1
-    });
+    cursors = this.input.keyboard.createCursorKeys();
 
-    const cursors = this.input.keyboard.createCursorKeys();
-
-    this.input.keyboard.on('keydown_LEFT', () => {
-        player.setVelocityX(-160);
-        player.anims.play('left', true);
-    });
-
-    this.input.keyboard.on('keydown_RIGHT', () => {
-        player.setVelocityX(160);
-        player.anims.play('right', true);
-    });
-
-    this.input.keyboard.on('keyup_LEFT', () => {
-        if (cursors.right.isUp) {
-            player.setVelocityX(0);
-            player.anims.play('turn');
-        }
-    });
-
-    this.input.keyboard.on('keyup_RIGHT', () => {
-        if (cursors.left.isUp) {
-            player.setVelocityX(0);
-            player.anims.play('turn');
-        }
-    });
+    scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#000' });
 }
 
 function update() {
-    // Game logic updates
+    player.setVelocityX(0);
+
+    if (cursors.left.isDown) {
+        player.setVelocityX(-160);
+    } else if (cursors.right.isDown) {
+        player.setVelocityX(160);
+    }
+
+    if (cursors.up.isDown && player.body.touching.down) {
+        player.setVelocityY(-330);
+    }
+}
+
+function hitBall(player, ball) {
+    ball.setVelocityY(Phaser.Math.Between(-400, -300));
+    ball.setVelocityX(Phaser.Math.Between(-200, 200));
+
+    score += 1;
+    scoreText.setText('Score: ' + score);
 }
